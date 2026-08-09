@@ -10,7 +10,8 @@ import { HabitView } from '@/views/HabitView'
 import { AnalyticsView } from '@/views/AnalyticsView'
 import { NotesView } from '@/views/NotesView'
 import { ExpensesView } from '@/views/ExpensesView'
-import { Analytics } from '@vercel/analytics/next'
+// This is a Vite SPA, so the React entry point — not /next.
+import { Analytics } from '@vercel/analytics/react'
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -93,6 +94,7 @@ export default function App() {
       <AuthProvider>
         <Gate />
       </AuthProvider>
+      <Analytics />
     </QueryClientProvider>
   )
 }
