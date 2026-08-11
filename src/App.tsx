@@ -10,7 +10,6 @@ import { HabitView } from '@/views/HabitView'
 import { AnalyticsView } from '@/views/AnalyticsView'
 import { NotesView } from '@/views/NotesView'
 import { ExpensesView } from '@/views/ExpensesView'
-// This is a Vite SPA, so the React entry point — not /next.
 import { Analytics } from '@vercel/analytics/react'
 
 const queryClient = new QueryClient({
