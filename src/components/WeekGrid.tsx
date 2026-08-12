@@ -1,34 +1,42 @@
 import { Fragment } from 'react'
-import { THEMES } from '@/data/themes'
+import { themeById } from '@/data/themes'
+import { calendarWeek, isoLocal } from '@/lib/date'
 import { useTracker } from '@/state/TrackerContext'
-
-// The week strip keeps the Nocturne ramp regardless of the active palette,
-// matching the original design — only the year heatmaps are theme-aware.
-const RAMP = THEMES[0]!.ramp
-const EMPTY = THEMES[0]!.empty
 
 const DAY_LETTERS = 'SMTWTFS'
 
 export function WeekGrid() {
-  const { today, habits, seriesByHabit } = useTracker()
+  const { today, habits, seriesByHabit, theme } = useTracker()
+  const { ramp: RAMP, empty: EMPTY } = themeById(theme)
 
-  const weekDates: Date[] = []
-  for (let i = 6; i >= 0; i--)
-    weekDates.push(new Date(today.getTime() - i * 86400000))
+  const weekDates = calendarWeek(today)
+  const todayISO = isoLocal(today)
 
   let weekDone = 0
   const rows = habits.map((h) => {
-    const days = seriesByHabit[h.id]?.days ?? []
-    const offset = days.length - 7
+    // Keyed by date rather than by index: the days after today in this week
+    // have no series entry at all, so positional lookup won't do.
+    const minutesOn = new Map(
+      (seriesByHabit[h.id]?.days ?? []).map((d) => [
+        isoLocal(d.date),
+        d.minutes,
+      ]),
+    )
     return {
       id: h.id,
       name: h.name,
-      cells: weekDates.map((wd, i) => {
-        const m = days[offset + i]?.minutes ?? 0
+      cells: weekDates.map((wd) => {
+        const iso = isoLocal(wd)
+        const m = minutesOn.get(iso) ?? 0
         if (m > 0) weekDone++
         return {
           title:
-            wd.toDateString() + (m ? ' · ' + m + ' min' : ' · nothing logged'),
+            wd.toDateString() +
+            (m
+              ? ' · ' + m + ' min'
+              : iso > todayISO
+                ? ' · upcoming'
+                : ' · nothing logged'),
           color:
             m > 0
               ? RAMP[
@@ -64,7 +72,9 @@ export function WeekGrid() {
             className="text-center text-[10px] tracking-[0.06em]"
             style={{
               color:
-                i === 6 ? 'var(--color-accent)' : 'var(--color-neutral-600)',
+                isoLocal(d) === todayISO
+                  ? 'var(--color-accent)'
+                  : 'var(--color-neutral-600)',
             }}
           >
             {DAY_LETTERS[d.getDay()]}

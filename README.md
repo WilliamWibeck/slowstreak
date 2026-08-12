@@ -12,7 +12,8 @@ with the Nocturne design system tokens.
 - **Practice** — per-habit stats, full-year heatmap, recent entries
 - **Analytics** — last 30 days vs the 30 before: completion, minutes, streaks
 - **Notes** — one journal entry per day
-- **Expenses** — recurring bills normalised to a monthly figure
+- **Expenses** — recurring bills normalised to a monthly figure, in the
+  currency picked in the sidebar
 
 ---
 
@@ -29,8 +30,8 @@ In the dashboard go to **SQL Editor → New query**, paste the entire contents o
 [`supabase/migrations/0001_init.sql`](supabase/migrations/0001_init.sql), and
 run it.
 
-Then do the same with `0002_tighten_entry_policy.sql` and
-`0003_habits_not_seeded.sql`, in order.
+Then do the same with `0002_tighten_entry_policy.sql`,
+`0003_habits_not_seeded.sql` and `0004_currency_setting.sql`, in order.
 
 Together they create five tables (`habits`, `entries`, `journal_notes`,
 `bills`, `user_settings`) and turn on row level security with a "your rows

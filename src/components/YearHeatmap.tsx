@@ -1,6 +1,7 @@
 import { ActivityCalendar } from 'react-activity-calendar'
 import type { DayEntry } from '@/types'
 import { isoLocal } from '@/lib/date'
+import { padToWeekEnd } from '@/lib/series'
 import { themeById } from '@/data/themes'
 import { useTracker } from '@/state/TrackerContext'
 
@@ -25,12 +26,17 @@ export function YearHeatmap({
   const { theme } = useTracker()
   const t = themeById(theme)
 
-  const data = days.map((d) => ({
+  // Complete the current week so the final column is full height, the way
+  // GitHub's contribution graph renders the days still to come.
+  const shown = padToWeekEnd(days)
+  const todayISO = isoLocal(days[days.length - 1]?.date ?? new Date())
+
+  const data = shown.map((d) => ({
     date: isoLocal(d.date),
     count: d.minutes,
     level: levelFor(d.minutes, target),
   }))
-  const noteByDate = new Map(days.map((d) => [isoLocal(d.date), d.note]))
+  const noteByDate = new Map(shown.map((d) => [isoLocal(d.date), d.note]))
 
   return (
     <ActivityCalendar
@@ -51,6 +57,7 @@ export function YearHeatmap({
           text: (a) => {
             const d = new Date(a.date + 'T00:00:00')
             const note = noteByDate.get(a.date)
+            if (a.date > todayISO) return d.toDateString() + ' · upcoming'
             return (
               d.toDateString() +
               (a.count

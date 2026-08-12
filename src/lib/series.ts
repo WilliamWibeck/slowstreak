@@ -1,12 +1,40 @@
 import type { DayEntry, HabitSeries } from '@/types'
 import type { EntryRow } from '@/lib/database.types'
-import { isoLocal } from '@/lib/date'
+// Relative and extensioned so `node --test` can load this without the Vite
+// alias; the type imports above are erased before Node ever resolves them.
+import { isoLocal } from './date.ts'
 
 export const WINDOW_DAYS = 365
 
 /** First day of the rolling window, as a local ISO date. */
 export function windowStart(today: Date): string {
   return isoLocal(new Date(today.getTime() - (WINDOW_DAYS - 1) * 86400000))
+}
+
+/**
+ * Extends a day list forward to the Saturday that closes its final calendar
+ * week, as zero-minute days.
+ *
+ * react-activity-calendar left-pads the first week but leaves the last one
+ * short, so a series ending mid-week renders a stunted final column. GitHub
+ * draws those remaining days as empty squares instead; this supplies them.
+ */
+export function padToWeekEnd(days: DayEntry[]): DayEntry[] {
+  const last = days[days.length - 1]
+  if (!last) return days
+  const out = [...days]
+  for (let i = 1; i <= 6 - last.date.getDay(); i++) {
+    out.push({
+      date: new Date(
+        last.date.getFullYear(),
+        last.date.getMonth(),
+        last.date.getDate() + i,
+      ),
+      minutes: 0,
+      note: '',
+    })
+  }
+  return out
 }
 
 /**

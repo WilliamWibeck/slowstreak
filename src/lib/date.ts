@@ -3,6 +3,21 @@ export function isoLocal(d: Date): string {
   return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate())
 }
 
+/**
+ * The seven dates of the Sunday-start calendar week containing `d`, GitHub's
+ * layout: the week runs Sun→Sat whether or not those days have happened yet.
+ *
+ * Day-of-month arithmetic rather than ±86400000 so a DST boundary inside the
+ * week doesn't shift a date onto its neighbour.
+ */
+export function calendarWeek(d: Date): Date[] {
+  const sunday = d.getDate() - d.getDay()
+  return Array.from(
+    { length: 7 },
+    (_, i) => new Date(d.getFullYear(), d.getMonth(), sunday + i),
+  )
+}
+
 export function ordinal(d: number): string {
   const s = ['th', 'st', 'nd', 'rd']
   const v = d % 100
