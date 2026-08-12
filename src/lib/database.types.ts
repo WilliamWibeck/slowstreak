@@ -50,6 +50,8 @@ export type BillRow = {
 export type UserSettingsRow = {
   user_id: string
   theme: string
+  /** ISO 4217 code — how money is formatted on the expenses page. */
+  currency: string
   updated_at: string
 }
 

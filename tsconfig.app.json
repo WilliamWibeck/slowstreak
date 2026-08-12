@@ -27,5 +27,8 @@
     "erasableSyntaxOnly": true,
     "noFallthroughCasesInSwitch": true
   },
-  "include": ["src"]
+  "include": ["src"],
+  // Tests run on Node, not in the browser — typechecked by tsconfig.node.json
+  // so node: imports resolve without pulling node globals into the app.
+  "exclude": ["src/**/*.test.ts"]
 }

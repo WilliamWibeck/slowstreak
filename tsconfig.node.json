@@ -7,11 +7,19 @@
     "skipLibCheck": true,
 
     /* Bundler mode */
-    "module": "nodenext",
+    // Bundler resolution rather than nodenext so the @/ alias below resolves
+    // the same way it does in the app; both files here are typecheck-only.
+    "module": "esnext",
+    "moduleResolution": "bundler",
     "allowImportingTsExtensions": true,
     "verbatimModuleSyntax": true,
     "moduleDetection": "force",
     "noEmit": true,
+
+    /* Tests live in src and reach the rest of it through the @/ alias. */
+    "paths": {
+      "@/*": ["./src/*"]
+    },
 
     /* Linting */
     "noUnusedLocals": true,
@@ -19,5 +27,5 @@
     "erasableSyntaxOnly": true,
     "noFallthroughCasesInSwitch": true
   },
-  "include": ["vite.config.ts"]
+  "include": ["vite.config.ts", "src/**/*.test.ts"]
 }

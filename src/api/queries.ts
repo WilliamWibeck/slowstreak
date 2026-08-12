@@ -226,7 +226,7 @@ export async function fetchSettings(userId: string): Promise<UserSettingsRow> {
 
 export async function updateSettings(
   userId: string,
-  patch: Partial<Pick<UserSettingsRow, 'theme'>>,
+  patch: Partial<Pick<UserSettingsRow, 'theme' | 'currency'>>,
 ): Promise<UserSettingsRow> {
   return unwrap(
     await supabase

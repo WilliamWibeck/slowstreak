@@ -1,7 +1,7 @@
 import { CADENCES, cadenceById } from '@/data/expenses'
 import type { BillRow } from '@/lib/database.types'
 import { ordinal } from '@/lib/date'
-import { money } from '@/lib/format'
+import { money as formatMoney } from '@/lib/format'
 import { useTracker } from '@/state/TrackerContext'
 import { BillModal } from '@/components/BillModal'
 
@@ -10,7 +10,8 @@ function monthlyOf(b: BillRow): number {
 }
 
 export function ExpensesView() {
-  const { bills, today, newBill, editBill, removeBill } = useTracker()
+  const { bills, today, newBill, editBill, removeBill, currency } = useTracker()
+  const money = (n: number) => formatMoney(n, currency)
 
   const monthlyTotal = bills.reduce((sum, b) => sum + monthlyOf(b), 0)
   const catTotals: Record<string, number> = {}

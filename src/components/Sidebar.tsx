@@ -1,5 +1,6 @@
 import { THEMES, themeById } from '@/data/themes'
 import { longDate } from '@/lib/date'
+import { currencyCodes } from '@/lib/format'
 import { useTracker } from '@/state/TrackerContext'
 import { useAuth } from '@/auth/AuthProvider'
 import type { View } from '@/types'
@@ -12,6 +13,8 @@ function navClass(active: boolean) {
       : 'border-transparent text-neutral-400 hover:text-text')
   )
 }
+
+const CURRENCIES = currencyCodes()
 
 const VIEW_LABEL: Record<View, string> = {
   dashboard: 'Dashboard',
@@ -37,6 +40,8 @@ export function Sidebar() {
     toggleMenu,
     theme,
     pickTheme,
+    currency,
+    pickCurrency,
     today,
     newHabit,
     signOut,
@@ -168,6 +173,23 @@ export function Sidebar() {
               ))}
             </div>
             <div className="text-neutral-500">{themeById(theme).name}</div>
+
+            <div className="mt-3 text-[10px] tracking-[0.1em] text-neutral-500 uppercase">
+              Currency
+            </div>
+            <select
+              value={currency}
+              onChange={(e) => pickCurrency(e.target.value)}
+              aria-label="Display currency"
+              className="input mb-2 min-h-0 py-1 text-[11px]"
+            >
+              {CURRENCIES.map((c) => (
+                <option key={c} value={c}>
+                  {c}
+                </option>
+              ))}
+            </select>
+
             <div>{longDate(today)}</div>
             <div className="truncate" title={user?.email ?? ''}>
               {user?.email}

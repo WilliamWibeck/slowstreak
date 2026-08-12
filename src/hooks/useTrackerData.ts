@@ -194,7 +194,8 @@ export function useUpdateSettings() {
   const qc = useQueryClient()
   const { user } = useAuth()
   return useMutation({
-    mutationFn: (patch: { theme?: string }) => api.updateSettings(user!.id, patch),
+    mutationFn: (patch: { theme?: string; currency?: string }) =>
+      api.updateSettings(user!.id, patch),
     onSuccess: (row) => qc.setQueryData(keys.settings(user!.id), row),
   })
 }

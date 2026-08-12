@@ -37,6 +37,7 @@ type TrackerCtx = {
   notesKeys: string[]
   bills: BillRow[]
   theme: string
+  currency: string
   loading: boolean
   error: string | null
 
@@ -56,6 +57,7 @@ type TrackerCtx = {
   goHabit: (id: string) => void
   toggleMenu: () => void
   pickTheme: (id: string) => void
+  pickCurrency: (code: string) => void
   signOut: () => Promise<void>
 
   // logging
@@ -173,6 +175,7 @@ export function TrackerProvider({ children }: { children: ReactNode }) {
   )
 
   const theme = settingsQ.data?.theme ?? 'nocturne'
+  const currency = settingsQ.data?.currency ?? 'USD'
 
   // UI state
   const [view, setView] = useState<View>('dashboard')
@@ -264,6 +267,10 @@ export function TrackerProvider({ children }: { children: ReactNode }) {
       applyTheme(id) // paint immediately; the write-back is best-effort
       updateSettingsM.mutate({ theme: id })
     },
+    [updateSettingsM],
+  )
+  const pickCurrency = useCallback(
+    (code: string) => updateSettingsM.mutate({ currency: code }),
     [updateSettingsM],
   )
 
@@ -502,6 +509,7 @@ export function TrackerProvider({ children }: { children: ReactNode }) {
     notesKeys,
     bills,
     theme,
+    currency,
     loading,
     error,
     today,
@@ -518,6 +526,7 @@ export function TrackerProvider({ children }: { children: ReactNode }) {
     goHabit,
     toggleMenu,
     pickTheme,
+    pickCurrency,
     signOut,
     toggleHabit,
     modal,
