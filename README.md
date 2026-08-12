@@ -14,6 +14,8 @@ with the Nocturne design system tokens.
 - **Notes** — one journal entry per day
 - **Expenses** — recurring bills normalised to a monthly figure, in the
   currency picked in the sidebar
+- **Budget** — spend-by-category against monthly targets, fed by a nightly
+  import of real bank transactions, plus a six-month trend
 
 ---
 
@@ -31,11 +33,17 @@ In the dashboard go to **SQL Editor → New query**, paste the entire contents o
 run it.
 
 Then do the same with `0002_tighten_entry_policy.sql`,
-`0003_habits_not_seeded.sql` and `0004_currency_setting.sql`, in order.
+`0003_habits_not_seeded.sql`, `0004_currency_setting.sql` and
+`0005_expense_tracking.sql`, in order.
 
-Together they create five tables (`habits`, `entries`, `journal_notes`,
-`bills`, `user_settings`) and turn on row level security with a "your rows
-only" policy on each.
+Together they create the five core tables (`habits`, `entries`,
+`journal_notes`, `bills`, `user_settings`) plus the expense-import tables
+(`expense_transactions`, `bank_connections`, `category_rules`,
+`merchant_categories`, `fx_rates`), and turn on row level security with a
+"your rows only" policy on each.
+
+`0005` is only needed if you want the bank import — the rest of the app runs
+without it, and applying it costs nothing if you never connect an account.
 
 **No habits are seeded.** Every account — yours included — starts empty and
 creates its own through the habit form (the `+` beside "Practices", or the
@@ -143,6 +151,120 @@ the database actually stored, rolling back if the write fails.
 
 ---
 
+## Automated expense tracking
+
+Optional, and independent of everything above. A nightly Vercel Cron job pulls
+transactions from your own bank accounts through
+[Enable Banking](https://enablebanking.com) and writes them to
+`expense_transactions`; the **Budget** page reads them back.
+
+Skip this section entirely if you only want the habit tracker.
+
+### 1. Register the app
+
+Sign up at Enable Banking and register an application in the Control Panel.
+Choose **Restricted Production** — you are reading your own accounts, not
+building a product for other people, and restricted mode is activated by
+linking those accounts rather than by a commercial review.
+
+Let the browser generate the key pair. A `.pem` lands in your downloads named
+after the application id; that file is the only copy, and every API request is
+signed with it.
+
+### 2. Set the environment
+
+See the second half of `.env.local.example` for the full list with notes. In
+short: the Supabase server pair (`SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`),
+your user id (`SLOWSTREAK_USER_ID`), the Enable Banking app id, private key and
+redirect URL, an `ANTHROPIC_API_KEY` for the categoriser, and a `CRON_SECRET`.
+
+```bash
+vercel env add SUPABASE_SERVICE_ROLE_KEY
+# …and so on, then redeploy
+```
+
+The service_role key bypasses RLS. That is deliberate — an unattended job has
+no session to authorise against — but it means the key must never appear in
+anything `VITE_`-prefixed, because those get inlined into the browser bundle.
+
+### 3. Connect each account, once
+
+```bash
+open "https://slowstreak.com/api/connect/start?bank=seb&token=$CRON_SECRET"
+```
+
+Then `bank=bank-norwegian` and `bank=amex`. Each opens the bank's BankID flow;
+on success the session is written to `bank_connections` server-side and never
+touches the browser.
+
+If a bank 404s, its ASPSP name doesn't match Enable Banking's catalogue —
+override it with the `ASPSP_*_NAME` variables rather than editing
+`api/_lib/banks.ts`.
+
+**PSD2 consent lapses roughly every 90 days.** Nothing renews it silently: the
+sync flags the connection, the Budget page shows a banner, and the sidebar
+shows a dot. Re-run the same command to reconnect.
+
+### 4. Let it run
+
+`vercel.json` schedules `/api/cron/sync-expenses` daily at 05:00 UTC. To run it
+by hand:
+
+```bash
+curl -H "Authorization: Bearer $CRON_SECRET" \
+     https://slowstreak.com/api/cron/sync-expenses
+```
+
+**It is safe to re-run.** Rows are upserted on
+`(user_id, account, bank_transaction_id)` rather than inserted, and FX rates
+are cached per date, so a second run converges on the same rows with the same
+values instead of duplicating or re-pricing anything.
+
+### How the import decides things
+
+**Dedup is on the bank's transaction id, never on amount + date.** A bank is
+not obliged to keep that id stable when a pending transaction books, though,
+and several reissue it — which would produce exactly the double count the id
+was supposed to prevent. So before writing, a settled transaction whose id we
+have never seen looks for an orphaned pending row of about the right size
+(within 15%, or 20 kr, to absorb tips and FX adjustments) and within six days,
+and adopts it.
+
+**Pending transactions count toward "spent so far"**, drawn as a hatched tail
+on the category bar. They are real money as far as a budget is concerned; the
+hatching is there because the final figure can still move.
+
+**Refunds are negative amounts under the same category**, so they net out
+against the purchase instead of needing a second row type.
+
+**Currency conversion prefers the bank's own figure.** Where the bank tells us
+what a transaction was in SEK before it converted — a Swedish purchase on the
+Norwegian card, say — that is exact and wins. Otherwise a daily ECB reference
+rate, cached per date in `fx_rates`. Weekends resolve to the preceding business
+day, which is what the ECB publishes.
+
+**Internal transfers are excluded from spend** two ways: automatically, when a
+debit on one account matches a credit on another within a day, and manually,
+via a row in `category_rules` whose category is `Transfer`. Use the manual
+route for anything the automatic pass can't see — the two legs landing days
+apart, salary, or a card bill payment that would otherwise register as a giant
+refund.
+
+**Categorisation** checks `category_rules` first (merchant substring →
+category, cheapest and always wins), then falls back to Claude Haiku 4.5 for
+anything unmatched, caching the answer per normalised merchant in
+`merchant_categories` so the same shop is never classified twice. The raw bank
+text is stored untouched in `merchant_raw` and never overwritten. Correcting a
+category on the Budget page pins it, and re-imports leave pinned rows alone.
+
+Populate `category_rules` as patterns emerge — it's the fastest way to make the
+categoriser right, and it costs nothing per transaction:
+
+```sql
+insert into category_rules (user_id, substring, category, priority)
+values ('<your user id>', 'ICA', 'Food', 10);
+```
+
 ## Scripts
 
 | Command           | Does                           |
@@ -161,8 +283,13 @@ src/
 ├── auth/                 # session provider + login screen
 ├── hooks/                # TanStack Query hooks, optimistic mutations
 ├── state/TrackerContext  # UI state (view, modals, inline edits)
-├── lib/                  # supabase client, db types, date/format, series
-├── components/           # cards, heatmap, dialogs, sidebar
-└── views/                # the five screens
+├── lib/                  # supabase client, db types, date/format, series,
+│                         #   budget aggregation
+├── components/           # cards, heatmap, meter bar, dialogs, sidebar
+└── views/                # the six screens
+api/                      # Vercel functions — server-side only
+├── _lib/                 # Enable Banking client, FX, categoriser, sync
+├── connect/              # the one-time bank consent flow
+└── cron/sync-expenses.ts # the nightly import
 supabase/migrations/      # the schema
 ```

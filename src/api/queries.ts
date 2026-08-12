@@ -1,8 +1,10 @@
 import { supabase } from '@/lib/supabase'
 import type {
+  BankConnectionRow,
   BillRow,
   Cadence,
   EntryRow,
+  ExpenseTransactionRow,
   HabitRow,
   JournalNoteRow,
   UserSettingsRow,
@@ -226,13 +228,66 @@ export async function fetchSettings(userId: string): Promise<UserSettingsRow> {
 
 export async function updateSettings(
   userId: string,
-  patch: Partial<Pick<UserSettingsRow, 'theme' | 'currency'>>,
+  patch: Partial<
+    Pick<UserSettingsRow, 'theme' | 'currency' | 'budget_targets'>
+  >,
 ): Promise<UserSettingsRow> {
   return unwrap(
     await supabase
       .from('user_settings')
       .update(patch)
       .eq('user_id', userId)
+      .select()
+      .single(),
+  )
+}
+
+// ── imported transactions ────────────────────────────────────────────────
+// Written by the nightly sync job (api/cron/sync-expenses.ts) with the
+// service_role key. The app reads them and can correct a category.
+
+/**
+ * Every transaction booked on or after `fromISO`.
+ *
+ * The budget page needs the current month for its bars and six months for the
+ * trend, so both come from one query rather than two overlapping ones.
+ */
+export async function fetchTransactions(
+  fromISO: string,
+): Promise<ExpenseTransactionRow[]> {
+  return unwrap(
+    await supabase
+      .from('expense_transactions')
+      .select('*')
+      .gte('booking_date', fromISO)
+      .order('booking_date', { ascending: false }),
+  )
+}
+
+export async function fetchConnections(): Promise<BankConnectionRow[]> {
+  return unwrap(
+    await supabase
+      .from('bank_connections')
+      .select('*')
+      .order('display_name', { ascending: true }),
+  )
+}
+
+/**
+ * Correct a transaction's category by hand.
+ *
+ * Sets category_locked so the next import leaves it alone — the correction is
+ * to the categoriser's guess, and re-importing must not silently undo it.
+ */
+export async function setTransactionCategory(
+  id: string,
+  category: string,
+): Promise<ExpenseTransactionRow> {
+  return unwrap(
+    await supabase
+      .from('expense_transactions')
+      .update({ category, category_locked: true })
+      .eq('id', id)
       .select()
       .single(),
   )

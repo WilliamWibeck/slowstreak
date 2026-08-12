@@ -1,6 +1,7 @@
 import type { Cadence } from '@/lib/database.types'
 
-export type View = 'dashboard' | 'habit' | 'analytics' | 'notes' | 'expenses'
+export type View =
+  'dashboard' | 'habit' | 'analytics' | 'notes' | 'expenses' | 'budget'
 
 export type DayEntry = {
   date: Date

@@ -70,6 +70,15 @@
  * drops variables it sees no utility usage for.
  */
 :root {
+  /*
+   * Overspend. Deliberately outside the theme palette and outside @theme:
+   * every theme is a single accent hue, so an over-budget bar drawn in the
+   * accent would read as "more of the same" rather than as a warning. This is
+   * the same red the error banner in App.tsx uses, and it is referenced only
+   * through var(), which @theme would prune.
+   */
+  --color-over-budget: #f87171;
+
   --space-1: calc(var(--spacing) * 1);
   --space-2: calc(var(--spacing) * 2);
   --space-3: calc(var(--spacing) * 3);

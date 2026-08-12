@@ -8,13 +8,20 @@ import {
   useState,
   type ReactNode,
 } from 'react'
-import type { BillRow, Cadence, HabitRow } from '@/lib/database.types'
+import type {
+  BankConnectionRow,
+  BillRow,
+  Cadence,
+  ExpenseTransactionRow,
+  HabitRow,
+} from '@/lib/database.types'
 import type { BillDraft, HabitDraft, HabitSeries, View } from '@/types'
 import { useAuth } from '@/auth/AuthProvider'
 import { applyTheme } from '@/data/themes'
 import {
   useArchiveHabit,
   useBills,
+  useConnections,
   useDeleteBill,
   useEntries,
   useHabits,
@@ -22,8 +29,10 @@ import {
   useSaveBill,
   useSaveHabit,
   useSeries,
+  useSetTransactionCategory,
   useSettings,
   useToday,
+  useTransactions,
   useUpdateSettings,
   useUpsertEntry,
   useUpsertNote,
@@ -36,6 +45,11 @@ type TrackerCtx = {
   notesByDate: Record<string, string>
   notesKeys: string[]
   bills: BillRow[]
+  /** Imported bank transactions, last six months. Always in SEK. */
+  transactions: ExpenseTransactionRow[]
+  connections: BankConnectionRow[]
+  /** Monthly spend target per category, in SEK. */
+  budgetTargets: Record<string, number>
   theme: string
   currency: string
   loading: boolean
@@ -54,6 +68,7 @@ type TrackerCtx = {
   goAnalytics: () => void
   goNotes: () => void
   goExpenses: () => void
+  goBudget: () => void
   goHabit: (id: string) => void
   toggleMenu: () => void
   pickTheme: (id: string) => void
@@ -110,6 +125,11 @@ type TrackerCtx = {
   saveBill: () => void
   removeBill: (id: string) => void
 
+  // budget
+  /** null clears the target — distinct from a target of zero. */
+  setBudgetTarget: (category: string, target: number | null) => void
+  recategorize: (id: string, category: string) => void
+
   // habits CRUD
   habitModal: 'new' | string | null
   habitDraft: HabitDraft
@@ -139,14 +159,17 @@ const emptyHabitDraft = (): HabitDraft => ({
 
 export function TrackerProvider({ children }: { children: ReactNode }) {
   const { signOut } = useAuth()
-  const { today, todayISO, from } = useToday()
+  const { today, todayISO, from, budgetFrom } = useToday()
 
   const habitsQ = useHabits()
   const entriesQ = useEntries(from, todayISO)
   const notesQ = useNotes()
   const billsQ = useBills()
   const settingsQ = useSettings()
+  const transactionsQ = useTransactions(budgetFrom)
+  const connectionsQ = useConnections()
 
+  const setCategoryM = useSetTransactionCategory(budgetFrom)
   const upsertEntry = useUpsertEntry(from, todayISO)
   const upsertNote = useUpsertNote()
   const saveBillM = useSaveBill()
@@ -158,6 +181,14 @@ export function TrackerProvider({ children }: { children: ReactNode }) {
   const habits = useMemo(() => habitsQ.data ?? [], [habitsQ.data])
   const entries = useMemo(() => entriesQ.data ?? [], [entriesQ.data])
   const bills = useMemo(() => billsQ.data ?? [], [billsQ.data])
+  const transactions = useMemo(
+    () => transactionsQ.data ?? [],
+    [transactionsQ.data],
+  )
+  const connections = useMemo(
+    () => connectionsQ.data ?? [],
+    [connectionsQ.data],
+  )
   const seriesByHabit = useSeries(habits, entries, today)
 
   const notesByDate = useMemo(() => {
@@ -176,6 +207,10 @@ export function TrackerProvider({ children }: { children: ReactNode }) {
 
   const theme = settingsQ.data?.theme ?? 'nocturne'
   const currency = settingsQ.data?.currency ?? 'USD'
+  const budgetTargets = useMemo(
+    () => settingsQ.data?.budget_targets ?? {},
+    [settingsQ.data?.budget_targets],
+  )
 
   // UI state
   const [view, setView] = useState<View>('dashboard')
@@ -253,6 +288,10 @@ export function TrackerProvider({ children }: { children: ReactNode }) {
   }, [])
   const goExpenses = useCallback(() => {
     setView('expenses')
+    setMenuOpen(false)
+  }, [])
+  const goBudget = useCallback(() => {
+    setView('budget')
     setMenuOpen(false)
   }, [])
   const goHabit = useCallback((id: string) => {
@@ -436,6 +475,22 @@ export function TrackerProvider({ children }: { children: ReactNode }) {
     [deleteBillM],
   )
 
+  const setBudgetTarget = useCallback(
+    (category: string, target: number | null) => {
+      // The whole map is rewritten rather than patched: it lives in a single
+      // jsonb column, so there is no partial update to make.
+      const next = { ...budgetTargets }
+      if (target === null) delete next[category]
+      else next[category] = target
+      updateSettingsM.mutate({ budget_targets: next })
+    },
+    [budgetTargets, updateSettingsM],
+  )
+  const recategorize = useCallback(
+    (id: string, category: string) => setCategoryM.mutate({ id, category }),
+    [setCategoryM],
+  )
+
   const newHabit = useCallback(() => {
     setHabitModal('new')
     setHabitDraft(emptyHabitDraft())
@@ -492,14 +547,18 @@ export function TrackerProvider({ children }: { children: ReactNode }) {
     entriesQ.isPending ||
     notesQ.isPending ||
     billsQ.isPending ||
-    settingsQ.isPending
+    settingsQ.isPending ||
+    transactionsQ.isPending ||
+    connectionsQ.isPending
   const error =
     (
       habitsQ.error ??
       entriesQ.error ??
       notesQ.error ??
       billsQ.error ??
-      settingsQ.error
+      settingsQ.error ??
+      transactionsQ.error ??
+      connectionsQ.error
     )?.message ?? null
 
   const value: TrackerCtx = {
@@ -508,6 +567,9 @@ export function TrackerProvider({ children }: { children: ReactNode }) {
     notesByDate,
     notesKeys,
     bills,
+    transactions,
+    connections,
+    budgetTargets,
     theme,
     currency,
     loading,
@@ -523,6 +585,7 @@ export function TrackerProvider({ children }: { children: ReactNode }) {
     goAnalytics,
     goNotes,
     goExpenses,
+    goBudget,
     goHabit,
     toggleMenu,
     pickTheme,
@@ -567,6 +630,8 @@ export function TrackerProvider({ children }: { children: ReactNode }) {
     setBillField,
     saveBill,
     removeBill,
+    setBudgetTarget,
+    recategorize,
     habitModal,
     habitDraft,
     newHabit,

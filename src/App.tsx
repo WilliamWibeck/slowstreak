@@ -10,6 +10,7 @@ import { HabitView } from '@/views/HabitView'
 import { AnalyticsView } from '@/views/AnalyticsView'
 import { NotesView } from '@/views/NotesView'
 import { ExpensesView } from '@/views/ExpensesView'
+import { BudgetView } from '@/views/BudgetView'
 import { Analytics } from '@vercel/analytics/react'
 
 const queryClient = new QueryClient({
@@ -61,6 +62,7 @@ function Shell() {
             {view === 'analytics' && <AnalyticsView />}
             {view === 'notes' && <NotesView />}
             {view === 'expenses' && <ExpensesView />}
+            {view === 'budget' && <BudgetView />}
           </>
         )}
       </main>

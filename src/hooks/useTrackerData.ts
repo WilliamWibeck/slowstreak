@@ -4,6 +4,7 @@ import type {
   BillRow,
   Cadence,
   EntryRow,
+  ExpenseTransactionRow,
   HabitRow,
   JournalNoteRow,
 } from '@/lib/database.types'
@@ -19,14 +20,35 @@ export const keys = {
   notes: ['notes'] as const,
   bills: ['bills'] as const,
   settings: (userId: string) => ['settings', userId] as const,
+  transactions: (from: string) => ['transactions', from] as const,
+  connections: ['connections'] as const,
 }
 
+/** How much history the budget page loads: the trend view's six months. */
+export const TREND_MONTHS = 6
+
 /** Today, recomputed per render but stable in value for the whole session. */
-export function useToday(): { today: Date; todayISO: string; from: string } {
+export function useToday(): {
+  today: Date
+  todayISO: string
+  from: string
+  /** First day of the month TREND_MONTHS-1 back — the transaction window. */
+  budgetFrom: string
+} {
   return useMemo(() => {
     const today = new Date()
     today.setHours(0, 0, 0, 0)
-    return { today, todayISO: isoLocal(today), from: windowStart(today) }
+    const trendStart = new Date(
+      today.getFullYear(),
+      today.getMonth() - (TREND_MONTHS - 1),
+      1,
+    )
+    return {
+      today,
+      todayISO: isoLocal(today),
+      from: windowStart(today),
+      budgetFrom: isoLocal(trendStart),
+    }
   }, [])
 }
 
@@ -194,9 +216,61 @@ export function useUpdateSettings() {
   const qc = useQueryClient()
   const { user } = useAuth()
   return useMutation({
-    mutationFn: (patch: { theme?: string; currency?: string }) =>
-      api.updateSettings(user!.id, patch),
+    mutationFn: (patch: {
+      theme?: string
+      currency?: string
+      budget_targets?: Record<string, number>
+    }) => api.updateSettings(user!.id, patch),
     onSuccess: (row) => qc.setQueryData(keys.settings(user!.id), row),
+  })
+}
+
+// ── imported transactions ────────────────────────────────────────────────
+
+export function useTransactions(from: string) {
+  return useQuery({
+    queryKey: keys.transactions(from),
+    queryFn: () => api.fetchTransactions(from),
+  })
+}
+
+export function useConnections() {
+  return useQuery({
+    queryKey: keys.connections,
+    queryFn: api.fetchConnections,
+  })
+}
+
+/**
+ * Recategorise a transaction, optimistically.
+ *
+ * Same pattern as the habit mutations: the bar moves the moment you pick a
+ * category, and reconciles against what the database actually stored.
+ */
+export function useSetTransactionCategory(from: string) {
+  const qc = useQueryClient()
+  const key = keys.transactions(from)
+
+  return useMutation({
+    mutationFn: (v: { id: string; category: string }) =>
+      api.setTransactionCategory(v.id, v.category),
+    onMutate: async (v) => {
+      await qc.cancelQueries({ queryKey: key })
+      const prev = qc.getQueryData<ExpenseTransactionRow[]>(key) ?? []
+      qc.setQueryData<ExpenseTransactionRow[]>(
+        key,
+        prev.map((t) =>
+          t.id === v.id
+            ? { ...t, category: v.category, category_locked: true }
+            : t,
+        ),
+      )
+      return { prev }
+    },
+    onError: (_e, _v, ctx) => {
+      if (ctx) qc.setQueryData(key, ctx.prev)
+    },
+    onSettled: () => qc.invalidateQueries({ queryKey: key }),
   })
 }
 

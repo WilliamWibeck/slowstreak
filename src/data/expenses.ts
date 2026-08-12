@@ -1,14 +1,8 @@
 import type { Cadence } from '@/lib/database.types'
 
-export const CATEGORIES = [
-  'Housing',
-  'Utilities',
-  'Food',
-  'Transport',
-  'Health',
-  'Subscriptions',
-  'Other',
-]
+// The bills form and the importer's categoriser share one list, so a bill and
+// an imported transaction land in the same bucket.
+export { CATEGORIES } from '@/data/categories'
 
 type CadenceDef = { id: Cadence; label: string; per: number }
 

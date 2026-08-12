@@ -22,6 +22,7 @@ const VIEW_LABEL: Record<View, string> = {
   analytics: 'Analytics',
   notes: 'Notes',
   expenses: 'Expenses',
+  budget: 'Budget',
 }
 
 export function Sidebar() {
@@ -34,7 +35,9 @@ export function Sidebar() {
     goAnalytics,
     goNotes,
     goExpenses,
+    goBudget,
     goHabit,
+    connections,
     narrow,
     menuOpen,
     toggleMenu,
@@ -49,6 +52,7 @@ export function Sidebar() {
   const { user } = useAuth()
 
   const showMenu = !narrow || menuOpen
+  const needsReconnect = connections.filter((c) => c.needs_reconnect).length
 
   return (
     <aside
@@ -114,6 +118,18 @@ export function Sidebar() {
             </div>
             <div onClick={goExpenses} className={navClass(view === 'expenses')}>
               Expenses
+            </div>
+            <div onClick={goBudget} className={navClass(view === 'budget')}>
+              <span>Budget</span>
+              {/* A lapsed bank consent stops transactions arriving silently,
+                  so it gets a marker outside the budget page too. */}
+              {needsReconnect > 0 && (
+                <span
+                  aria-label={`${needsReconnect} bank connection needs reconnecting`}
+                  className="ml-2 h-1.5 w-1.5 shrink-0 rounded-full"
+                  style={{ background: 'var(--color-over-budget)' }}
+                />
+              )}
             </div>
           </div>
 

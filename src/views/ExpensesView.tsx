@@ -4,6 +4,7 @@ import { ordinal } from '@/lib/date'
 import { money as formatMoney } from '@/lib/format'
 import { useTracker } from '@/state/TrackerContext'
 import { BillModal } from '@/components/BillModal'
+import { MeterBar } from '@/components/MeterBar'
 
 function monthlyOf(b: BillRow): number {
   return b.amount * cadenceById(b.cadence).per
@@ -141,24 +142,14 @@ export function ExpensesView() {
               </div>
               <div className="flex flex-col gap-4">
                 {cats.map((c) => (
-                  <div key={c.name} className="flex flex-col gap-2">
-                    <div className="flex items-baseline justify-between text-xs">
-                      <span>{c.name}</span>
-                      <span className="text-neutral-400">
-                        {money(c.value)} ·{' '}
-                        {Math.round((c.value / (monthlyTotal || 1)) * 100)}%
-                      </span>
-                    </div>
-                    <div className="h-1.5 overflow-hidden rounded-[3px] bg-surface">
-                      <div
-                        className="h-full rounded-[3px] bg-accent"
-                        style={{
-                          width:
-                            Math.max(2, (c.value / (catMax || 1)) * 100) + '%',
-                        }}
-                      />
-                    </div>
-                  </div>
+                  <MeterBar
+                    key={c.name}
+                    label={c.name}
+                    meta={`${money(c.value)} · ${Math.round(
+                      (c.value / (monthlyTotal || 1)) * 100,
+                    )}%`}
+                    pct={Math.max(2, (c.value / (catMax || 1)) * 100)}
+                  />
                 ))}
               </div>
             </div>
