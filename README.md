@@ -9,6 +9,8 @@ TypeScript + Vite on the front, Supabase (Postgres + Auth) behind it. Styled
 with the Nocturne design system tokens.
 
 - **Dashboard** — today's habits, a week strip, and a year-long consistency map
+- **Week** — this week vs last: habits, journal notes, and spend, with paging
+  back through earlier weeks
 - **Practice** — per-habit stats, full-year heatmap, recent entries
 - **Analytics** — last 30 days vs the 30 before: completion, minutes, streaks
 - **Notes** — one journal entry per day
@@ -176,7 +178,7 @@ signed with it.
 See the second half of `.env.local.example` for the full list with notes. In
 short: the Supabase server pair (`SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`),
 your user id (`SLOWSTREAK_USER_ID`), the Enable Banking app id, private key and
-redirect URL, an `ANTHROPIC_API_KEY` for the categoriser, and a `CRON_SECRET`.
+redirect URL, a `GEMINI_API_KEY` for the categoriser, and a `CRON_SECRET`.
 
 ```bash
 vercel env add SUPABASE_SERVICE_ROLE_KEY
@@ -251,7 +253,7 @@ apart, salary, or a card bill payment that would otherwise register as a giant
 refund.
 
 **Categorisation** checks `category_rules` first (merchant substring →
-category, cheapest and always wins), then falls back to Claude Haiku 4.5 for
+category, cheapest and always wins), then falls back to Gemini 3.6 Flash for
 anything unmatched, caching the answer per normalised merchant in
 `merchant_categories` so the same shop is never classified twice. The raw bank
 text is stored untouched in `merchant_raw` and never overwritten. Correcting a
@@ -286,7 +288,7 @@ src/
 ├── lib/                  # supabase client, db types, date/format, series,
 │                         #   budget aggregation
 ├── components/           # cards, heatmap, meter bar, dialogs, sidebar
-└── views/                # the six screens
+└── views/                # the seven screens
 api/                      # Vercel functions — server-side only
 ├── _lib/                 # Enable Banking client, FX, categoriser, sync
 ├── connect/              # the one-time bank consent flow

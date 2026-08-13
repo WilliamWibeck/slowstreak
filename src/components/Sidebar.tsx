@@ -20,6 +20,7 @@ const VIEW_LABEL: Record<View, string> = {
   dashboard: 'Dashboard',
   habit: 'Practice',
   analytics: 'Analytics',
+  week: 'Week',
   notes: 'Notes',
   expenses: 'Expenses',
   budget: 'Budget',
@@ -33,6 +34,7 @@ export function Sidebar() {
     seriesByHabit,
     goDashboard,
     goAnalytics,
+    goWeek,
     goNotes,
     goExpenses,
     goBudget,
@@ -106,6 +108,9 @@ export function Sidebar() {
               className={navClass(view === 'dashboard')}
             >
               Dashboard
+            </div>
+            <div onClick={goWeek} className={navClass(view === 'week')}>
+              Week
             </div>
             <div
               onClick={goAnalytics}

@@ -8,6 +8,7 @@ import { HabitModal } from '@/components/HabitModal'
 import { DashboardView } from '@/views/DashboardView'
 import { HabitView } from '@/views/HabitView'
 import { AnalyticsView } from '@/views/AnalyticsView'
+import { SummaryView } from '@/views/SummaryView'
 import { NotesView } from '@/views/NotesView'
 import { ExpensesView } from '@/views/ExpensesView'
 import { BudgetView } from '@/views/BudgetView'
@@ -60,6 +61,7 @@ function Shell() {
             {view === 'dashboard' && <DashboardView />}
             {view === 'habit' && <HabitView />}
             {view === 'analytics' && <AnalyticsView />}
+            {view === 'week' && <SummaryView />}
             {view === 'notes' && <NotesView />}
             {view === 'expenses' && <ExpensesView />}
             {view === 'budget' && <BudgetView />}

@@ -5,7 +5,7 @@
 
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { calendarWeek, isoLocal } from './date.ts'
+import { addDays, calendarWeek, isoLocal, weekRangeLabel } from './date.ts'
 import { padToWeekEnd } from './series.ts'
 import type { DayEntry } from '../types.ts'
 
@@ -31,7 +31,10 @@ test('a calendar week runs Sunday to Saturday around any day in it', () => {
 test('the same week comes back whichever of its days you ask with', () => {
   const fromMonday = calendarWeek(new Date(2026, 7, 10)).map(isoLocal)
   for (const d of [9, 11, 15]) {
-    assert.deepEqual(calendarWeek(new Date(2026, 7, d)).map(isoLocal), fromMonday)
+    assert.deepEqual(
+      calendarWeek(new Date(2026, 7, d)).map(isoLocal),
+      fromMonday,
+    )
   }
 })
 
@@ -70,4 +73,19 @@ test('padded length is always a whole number of weeks off the start', () => {
 
 test('padToWeekEnd on an empty list is a no-op', () => {
   assert.deepEqual(padToWeekEnd([]), [])
+})
+
+test('addDays uses calendar arithmetic across a month boundary', () => {
+  assert.equal(isoLocal(addDays(new Date(2026, 7, 31), 1)), '2026-09-01')
+  assert.equal(isoLocal(addDays(new Date(2026, 7, 9), -7)), '2026-08-02')
+})
+
+test('weekRangeLabel collapses the month when both ends share it', () => {
+  const week = calendarWeek(new Date(2026, 7, 10))
+  assert.equal(weekRangeLabel(week), 'Aug 9 – 15')
+})
+
+test('weekRangeLabel names both months when the week spans them', () => {
+  const week = calendarWeek(new Date(2026, 7, 31))
+  assert.equal(weekRangeLabel(week), 'Aug 30 – Sep 5')
 })

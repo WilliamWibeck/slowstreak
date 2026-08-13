@@ -66,6 +66,7 @@ type TrackerCtx = {
   menuOpen: boolean
   goDashboard: () => void
   goAnalytics: () => void
+  goWeek: () => void
   goNotes: () => void
   goExpenses: () => void
   goBudget: () => void
@@ -280,6 +281,10 @@ export function TrackerProvider({ children }: { children: ReactNode }) {
   }, [])
   const goAnalytics = useCallback(() => {
     setView('analytics')
+    setMenuOpen(false)
+  }, [])
+  const goWeek = useCallback(() => {
+    setView('week')
     setMenuOpen(false)
   }, [])
   const goNotes = useCallback(() => {
@@ -583,6 +588,7 @@ export function TrackerProvider({ children }: { children: ReactNode }) {
     menuOpen,
     goDashboard,
     goAnalytics,
+    goWeek,
     goNotes,
     goExpenses,
     goBudget,

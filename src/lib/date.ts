@@ -18,6 +18,33 @@ export function calendarWeek(d: Date): Date[] {
   )
 }
 
+/**
+ * Shift a date by a number of calendar days. Same day-of-month arithmetic as
+ * `calendarWeek` — a DST night must not skip or duplicate a date.
+ */
+export function addDays(d: Date, days: number): Date {
+  return new Date(d.getFullYear(), d.getMonth(), d.getDate() + days)
+}
+
+/**
+ * Compact range for a Sunday–Saturday week: "Aug 9 – 15" when both ends share
+ * a month, "Aug 30 – Sep 5" when they don't.
+ */
+export function weekRangeLabel(week: Date[]): string {
+  const start = week[0]
+  const end = week[6]
+  if (!start || !end) return ''
+  const startPart = start.toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+  })
+  const endPart = end.toLocaleDateString('en-US', {
+    month: start.getMonth() === end.getMonth() ? undefined : 'short',
+    day: 'numeric',
+  })
+  return `${startPart} – ${endPart}`
+}
+
 export function ordinal(d: number): string {
   const s = ['th', 'st', 'nd', 'rd']
   const v = d % 100
