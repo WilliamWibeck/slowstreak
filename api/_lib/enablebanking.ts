@@ -1,5 +1,5 @@
 import { createSign } from 'node:crypto'
-import { env } from './env'
+import { env } from './env.js'
 
 /**
  * Enable Banking client.

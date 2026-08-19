@@ -1,5 +1,5 @@
-import { admin } from './supabase-admin'
-import { env } from './env'
+import { admin } from './supabase-admin.js'
+import { env } from './env.js'
 
 /**
  * Conversion to SEK.

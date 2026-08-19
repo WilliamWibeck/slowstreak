@@ -1,9 +1,9 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
-import { bankBySlug } from '../_lib/banks'
-import { createSession, type SessionAccount } from '../_lib/enablebanking'
-import { env } from '../_lib/env'
-import { verifyState } from '../_lib/state'
-import { admin } from '../_lib/supabase-admin'
+import { bankBySlug } from '../_lib/banks.js'
+import { createSession, type SessionAccount } from '../_lib/enablebanking.js'
+import { env } from '../_lib/env.js'
+import { verifyState } from '../_lib/state.js'
+import { admin } from '../_lib/supabase-admin.js'
 
 /**
  * Step two of the consent: the bank redirects here with a one-time `code`.

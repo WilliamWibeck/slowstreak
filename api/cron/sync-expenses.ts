@@ -1,7 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
-import { env } from '../_lib/env'
-import { secretMatches } from '../_lib/state'
-import { runSync } from '../_lib/sync'
+import { env } from '../_lib/env.js'
+import { secretMatches } from '../_lib/state.js'
+import { runSync } from '../_lib/sync.js'
 
 /**
  * Daily transaction import. Scheduled from vercel.json.

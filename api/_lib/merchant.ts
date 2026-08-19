@@ -1,4 +1,4 @@
-import type { EbTransaction } from './enablebanking'
+import type { EbTransaction } from './enablebanking.js'
 
 /**
  * The raw bank text for a transaction, untouched.

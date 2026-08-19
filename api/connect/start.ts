@@ -1,7 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
-import { BANKS, bankBySlug } from '../_lib/banks'
-import { startAuthorization } from '../_lib/enablebanking'
-import { secretMatches, signState } from '../_lib/state'
+import { BANKS, bankBySlug } from '../_lib/banks.js'
+import { startAuthorization } from '../_lib/enablebanking.js'
+import { secretMatches, signState } from '../_lib/state.js'
 
 /** PSD2 caps account-information consent at 90 days. Banks may grant less;
  *  whatever comes back on the session is what gets stored. */

@@ -1,5 +1,5 @@
 import { createHmac, timingSafeEqual } from 'node:crypto'
-import { env } from './env'
+import { env } from './env.js'
 
 /**
  * The OAuth `state` round-tripped through the bank.

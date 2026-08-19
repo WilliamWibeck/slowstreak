@@ -1,14 +1,14 @@
-import { admin } from './supabase-admin'
-import { env } from './env'
+import { admin } from './supabase-admin.js'
+import { env } from './env.js'
 import {
   EnableBankingError,
   fetchTransactionsSince,
   type EbTransaction,
-} from './enablebanking'
-import { convert, ratesFor } from './fx'
-import { buildCategorizer } from './categorize'
-import { merchantKey, merchantRaw } from './merchant'
-import { TRANSFER } from '../../src/data/categories'
+} from './enablebanking.js'
+import { convert, ratesFor } from './fx.js'
+import { buildCategorizer } from './categorize.js'
+import { merchantKey, merchantRaw } from './merchant.js'
+import { TRANSFER } from '../../src/data/categories.js'
 
 /**
  * The daily import.
