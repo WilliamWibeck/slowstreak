@@ -56,8 +56,8 @@ export const env = {
     return required('ENABLE_BANKING_REDIRECT_URL')
   },
 
-  get anthropicKey() {
-    return required('ANTHROPIC_API_KEY')
+  get geminiKey() {
+    return required('GEMINI_API_KEY')
   },
 
   /** Set automatically by Vercel Cron; also required on manual invocations. */

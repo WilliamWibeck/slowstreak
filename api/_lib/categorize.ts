@@ -1,7 +1,7 @@
 import { GoogleGenAI } from '@google/genai'
-import { admin } from './supabase-admin'
-import { env } from './env'
-import { CATEGORIES, UNCATEGORIZED } from '../../src/data/categories'
+import { admin } from './supabase-admin.js'
+import { env } from './env.js'
+import { CATEGORIES, UNCATEGORIZED } from '../../src/data/categories.js'
 
 /**
  * Two-stage categoriser.
@@ -62,7 +62,7 @@ export async function buildCategorizer(
 
   let learned = false
   if (unknown.length > 0) {
-    const guessed = await classifyWithClaude(unknown)
+    const guessed = await classifyWithGemini(unknown)
     const rows: CacheRow[] = []
     for (const [key, category] of guessed) {
       resolved.set(key, category)
@@ -195,9 +195,8 @@ async function classifyWithGemini(
         config: {
           systemInstruction: SYSTEM_INSTRUCTION,
           maxOutputTokens: 2048,
-          responseFormat: [
-            { text: { mimeType: 'application/json', schema: CATEGORY_SCHEMA } },
-          ],
+          responseMimeType: 'application/json',
+          responseSchema: CATEGORY_SCHEMA,
         },
       })
 
