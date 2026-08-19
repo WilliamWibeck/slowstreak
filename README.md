@@ -58,12 +58,13 @@ baked into the schema or the code.
 cp .env.local.example .env.local
 ```
 
-Fill in both values from **Project Settings → API**:
+Fill in these from **Project Settings → API**, plus your own email:
 
 | Variable                 | Where to find it                                  |
 | ------------------------ | ------------------------------------------------- |
 | `VITE_SUPABASE_URL`      | Project URL — bare origin, **no `/rest/v1` path** |
 | `VITE_SUPABASE_ANON_KEY` | `anon` / publishable key                          |
+| `VITE_OWNER_EMAIL`       | The one account the landing page will sign in as  |
 
 `supabase-js` appends the service paths (`/rest/v1`, `/auth/v1`, …) itself, so
 the URL must be just `https://<ref>.supabase.co`.
@@ -79,31 +80,24 @@ npm install
 npm run dev
 ```
 
-Open the app, hit **Create one**, and sign up. You'll land on an empty
-dashboard — add your habits from there.
+Open the app, type your password into the one field on the landing page, and
+hit enter. You'll land on an empty dashboard — add your habits from there.
 
 ---
 
-## Who can sign up
+## Who can sign in
 
-This deployment leaves registration **open** — anyone who finds the URL can
-create an account. They get their own empty tracker and cannot see anyone
-else's data.
+The landing page is a lock, not a registration form. It takes a password and
+tries it against `VITE_OWNER_EMAIL` — there is no sign-up path in the app.
 
-That isolation is enforced by Postgres, not by the app. Every table has RLS on
-with a policy of `auth.uid() = user_id` for both reads and writes, so the
-database itself refuses to return or accept a row that isn't yours. The
-publishable key in the bundle grants no data access on its own — verified by
-attempting an unauthenticated insert against each table, all rejected with
-`42501 new row violates row-level security policy`.
+That is not enough on its own. Anyone can still hit Supabase Auth directly
+with the publishable key unless you also turn registration off at the source:
 
-Two things worth keeping in mind with open registration:
+**Authentication → Providers → Email → Allow new users to sign up → off.**
 
-- **Leave "Confirm email" on** (Authentication → Sign In / Providers). It's the
-  main thing stopping bots from creating accounts in bulk.
-- **Watch the free tier.** Other people's accounts consume your project's row
-  and bandwidth allowance. If it ever gets abused, flip off **"Allow new users
-  to sign up"** in the same settings page — existing accounts keep working.
+Existing accounts keep working. Every table still has RLS on with
+`auth.uid() = user_id`, so even a session that somehow formed for someone else
+cannot read your rows.
 
 To verify isolation yourself at any time:
 
@@ -124,9 +118,10 @@ The app is a static SPA, so any host works. On Vercel:
 npx vercel
 ```
 
-Set `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` in **Project Settings →
-Environment Variables**, then redeploy. `vercel.json` already handles the build
-and SPA rewrites.
+Set `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY` and `VITE_OWNER_EMAIL` in
+**Project Settings → Environment Variables**, then redeploy. `vercel.json`
+already handles the build and SPA rewrites. `VITE_OWNER_EMAIL` is baked in at
+build time, so changing it later needs another deploy.
 
 Add your domain under **Settings → Domains**, then add that origin to Supabase
 under **Authentication → URL Configuration → Site URL / Redirect URLs** so auth
